@@ -2,14 +2,27 @@
 from scrapy import Spider
 from scrapy.loader import ItemLoader
 from quotes_spider.items import QuotesSpiderItem
+from scrapy.http import FormRequest
+from scrapy.utils.response import open_in_browser
 
 
 class QuotesSpider(Spider):
     name = 'quotes'
-    allowed_domains = ['quotes.toscrape.com']
-    start_urls = ['http://quotes.toscrape.com/']
+    # allowed_domains = ['quotes.toscrape.com']
+    start_urls = ['http://quotes.toscrape.com/login']
 
-    def parse(self, response):
+    def parse(self,response):
+        token=response.xpath('//*[@name="csrf_token"]/@value').extract_first()
+        return FormRequest.from_response(response,
+                                         formdata={
+                                             'csrf_token':token,
+                                             'password':'foobar',
+                                             'username':'foobar'
+                                         },callback=self.scrape_home_page)
+
+
+    def scrape_home_page(self, response):
+        open_in_browser(response)
         l=ItemLoader(item=QuotesSpiderItem(),response=response)
 
         h1_tag=response.xpath('//h1/a/text()').extract_first()
